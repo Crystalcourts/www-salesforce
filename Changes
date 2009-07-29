@@ -1,5 +1,10 @@
 Revision history for Perl extension WWW::Salesforce.
 
+0.12 Fri May 15 15:00:00 2009
+	- General cleanup of some ugly code (more left to do)
+	- Added describeSObjects  (thanks to Tom Hukins)
+	- Fixed some problems in WWW::Salesforce::Simple (thanks to WD Hawes)
+
 0.11 Thurs April 23 15:00:00 2009
     - Fixed a problem with some documentation and code discrepencies (thanks to Michael Blanco)
     - Fixed a small code problem in the retrieve function

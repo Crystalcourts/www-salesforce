@@ -5,22 +5,22 @@ package WWW::Salesforce;
     use warnings;
     use Carp;
 
-    use SOAP::Lite;# ( +trace => 'all', readable => 1, );#, outputxml => 1, );
-    #use Data::Dumper;
+    use SOAP::Lite;
     use WWW::Salesforce::Constants;
     use WWW::Salesforce::Deserializer;
     use WWW::Salesforce::Serializer;
 
     use vars qw(
-        $VERSION $SF_URI $SF_PREFIX $SF_PROXY $SF_SOBJECT_URI
+        $VERSION $SF_URI $SF_PREFIX $SF_PROXY $SF_SOBJECT_URI $errstr
     );
 
-    $VERSION = '0.11';
+    $VERSION = '0.12';
 
     $SF_PROXY = 'https://www.salesforce.com/services/Soap/u/8.0';
     $SF_URI = 'urn:partner.soap.sforce.com';
     $SF_PREFIX = 'sforce';
     $SF_SOBJECT_URI = 'urn:sobject.partner.soap.sforce.com';
+	$errstr = '';
 
     #**************************************************************************
     # new( %params )
@@ -40,8 +40,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !keys %in ) {
-            carp( "Expected a hash of arrays." );
+        unless ( keys %in ) {
+            $errstr = "Expected a hash of arrays.";
             return 0;
         }
         #take in data to be passed in our call
@@ -58,10 +58,11 @@ package WWW::Salesforce;
                 push @data, $dat;
             }
         }
-        if ( scalar @data < 1 || scalar @data > 200 ) {
-            carp( "convertLead converts up to 200 objects, no more." );
+        if ( @data < 1 or @data > 200 ) {
+            $errstr = "convertLead converts up to 200 objects, no more.";
             return 0;
         }
+		
         #got the data lined up, make the call
         my $client = $self->get_client( 1 );
         my $r = $client->convertLead(
@@ -69,8 +70,12 @@ package WWW::Salesforce;
                 ->name( "leadConverts" => \SOAP::Data->value( @data ) ),
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -84,8 +89,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !keys %in ) {
-            carp( "Expected a hash of arrays." );
+        unless ( keys %in ) {
+            $errstr = "Expected a hash of arrays.";
             return 0;
         }
         my $client = $self->get_client(1);
@@ -111,8 +116,12 @@ package WWW::Salesforce;
                     ->attr( { 'xsi:type' => 'sfons:'.$type } ),
                 $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -131,13 +140,13 @@ package WWW::Salesforce;
             ->prefix( $SF_PREFIX )
             ->uri( $SF_URI );
 
-        my @elems;
+        my @elems = ();
         foreach my $id ( @_ ) {
             push @elems, SOAP::Data->name('ids' => $id)->type('tns:ID');
         }
 
-        if ( scalar @elems < 1 || scalar @elems > 200 ) {
-            carp( "delete takes anywhere from 1 to 200 ids to delete." );
+        if ( @elems < 1 or @elems > 200 ) {
+            $errstr = "delete takes anywhere from 1 to 200 ids to delete.";
             return 0;
         }
 
@@ -145,8 +154,12 @@ package WWW::Salesforce;
             $method => @elems,
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -169,8 +182,12 @@ package WWW::Salesforce;
             $method,
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -185,8 +202,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'type'} or !length $in{'type'} ) {
-            carp( "Expected hash with key 'type'" );
+        unless ( exists $in{type} and defined $in{type} and length $in{type} ) {
+            $errstr = "Expected hash with key 'type'";
             return 0;
         }
         my $client = $self->get_client(1);
@@ -200,8 +217,12 @@ package WWW::Salesforce;
                 ->type( 'xsd:string' ), 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -216,8 +237,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'type'} or !length $in{'type'} ) {
-            carp( "Expected hash with key 'type'" );
+        unless ( exists $in{type} and defined $in{type} and length $in{type} ) {
+            $errstr = "Expected hash with key 'type'";
             return 0;
         }
 
@@ -233,8 +254,12 @@ package WWW::Salesforce;
                 ->type( 'xsd:string' ), 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -248,8 +273,7 @@ package WWW::Salesforce;
     #**************************************************************************
     sub describeSObjects {
         # TODO: new to v7.0
-        warn( "not done yet" );
-        carp( "This is on the todo list" );
+        croak( "not done yet" );
         return 0;
     }
 
@@ -271,8 +295,12 @@ package WWW::Salesforce;
             $method, 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -285,6 +313,7 @@ package WWW::Salesforce;
     sub get_client {
         my $self = shift;
         my ( $readable ) = @_;
+		$readable = 0 unless defined $readable;
         $readable = ( $readable )? 1 : 0;
 
         my $client = SOAP::Lite
@@ -323,15 +352,15 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'type'} || !length $in{'type'} ) {
+        unless ( exists $in{type} and defined $in{type} and length $in{type} ) {
             carp( "Expected hash with key of 'type'" );
             return 0;
         }
-        if ( !defined $in{'start'} || !length $in{'start'} ) {
+        unless ( exists $in{start} and defined $in{start} and length $in{start} ) {
             carp( "Expected hash with key of 'start' which is a date" );
             return 0;
         }
-        if ( !defined $in{'end'} || !length $in{'end'} ) {
+        unless ( exists $in{end} and defined $in{end} and length $in{end} ) {
             carp( "Expected hash with key of 'end' which is a date" );
             return 0;
         }
@@ -353,8 +382,12 @@ package WWW::Salesforce;
                 ->type( 'xsd:dateTime' ), 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -368,8 +401,12 @@ package WWW::Salesforce;
         my $self = shift;
         my $client = $self->get_client(1);
         my $r = $client->getServerTimestamp( $self->get_session_header() );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -385,16 +422,16 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'type'} || !length $in{'type'} ) {
-            carp( "Expected hash with key of 'type'" );
+        unless ( exists $in{type} and defined $in{type} and length $in{type} ) {
+            $errstr = "Expected hash with key of 'type'";
             return 0;
         }
-        if ( !defined $in{'start'} || !length $in{'start'} ) {
-            carp( "Expected hash with key of 'start' which is a date" );
+        unless ( exists $in{start} and defined $in{start} and length $in{start} ) {
+            $errstr = "Expected hash with key of 'start' which is a date";
             return 0;
         }
-        if ( !defined $in{'end'} || !length $in{'end'} ) {
-            carp( "Expected hash with key of 'end' which is a date" );
+        unless ( exists $in{end} and defined $in{end} and length $in{end} ) {
+            $errstr = "Expected hash with key of 'end' which is a date";
             return 0;
         }
 
@@ -415,8 +452,12 @@ package WWW::Salesforce;
                 ->type( 'xsd:dateTime' ), 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -431,8 +472,12 @@ package WWW::Salesforce;
         my $self = shift;
         my $client = $self->get_client(1);
         my $r = $client->getUserInfo( $self->get_session_header() );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -446,22 +491,23 @@ package WWW::Salesforce;
         my $class = shift;
         my ( %params ) = @_;
 
-        unless ( defined $params{'username'} and length $params{'username'} ) {
-            carp( "WWW::Salesforce::login() requires a username" );
+        unless ( exists $params{username} and defined $params{username} and length $params{username} ) {
+            $errstr = "WWW::Salesforce::login() requires a username";
             return 0;
         }
-        unless ( defined $params{'password'} and length $params{'password'} ) {
-            carp( "WWW::Salesforce::login() requires a password" );
+        unless ( exists $params{password} and defined $params{password} and length $params{password} ) {
+            $errstr = "WWW::Salesforce::login() requires a password";
             return 0;
         }
+		
         my $self = {
             sf_user => $params{'username'},
             sf_pass => $params{'password'},
             sf_serverurl => $SF_PROXY,
             sf_sid => undef, #session ID
         };
-        $self->{'sf_serverurl'} = $params{'serverurl'}
-            if ( $params{'serverurl'} && length( $params{'serverurl'} ) );
+        $self->{'sf_serverurl'} = $params{serverurl}
+            if ( exists $params{serverurl} and defined $params{serverurl} and length $params{serverurl} );
         bless $self, $class;
 
         my $client = $self->get_client();
@@ -469,6 +515,10 @@ package WWW::Salesforce;
             SOAP::Data->name( 'username' => $self->{'sf_user'} ),
             SOAP::Data->name( 'password' => $self->{'sf_pass'} )
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
             carp( $r->faultstring() );
             return 0;
@@ -488,15 +538,14 @@ package WWW::Salesforce;
     sub query {
         my $self = shift;
         my (%in) = @_;
-        if ( !defined $in{'query'} || !length $in{'query'} ) {
-            carp( "A query is needed for the query() method." );
+        unless ( exists $in{query} and defined $in{query} and length $in{query} ) {
+            $errstr = "A query is needed for the query() method.";
             return 0;
         }
-        if ( !defined $in{'limit'} || $in{'limit'} !~ m/^\d+$/ ) {
-            $in{'limit'} = 500
-        }
-        if ( $in{'limit'} < 1 || $in{'limit'} > 2000 ) {
-            carp( "A query's limit cannot exceed 2000. 500 is default." );
+        $in{limit} = 500
+            unless ( exists $in{limit} and defined $in{limit} and $in{limit} =~ m/^\d+$/ );
+        if ( $in{limit} < 1 or $in{limit} > 2000 ) {
+            $errstr = "A query's limit cannot exceed 2000. 500 is default.";
             return 0;
         }
 
@@ -514,8 +563,12 @@ package WWW::Salesforce;
             $limit,
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+			$errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -528,14 +581,14 @@ package WWW::Salesforce;
     sub queryMore {
         my $self = shift;
         my (%in) = @_;
-        if ( !defined $in{'queryLocator'} || !length $in{'queryLocator'} ) {
-            carp( "A hash expected with key 'queryLocator'" );
+        unless ( exists $in{queryLocator} and defined $in{queryLocator} and length $in{queryLocator} ) {
+            $errstr = "A hash expected with key 'queryLocator'";
             return 0;
         }
-        $in{'limit'} = 500
-            if ( !defined $in{'limit'} || $in{'limit'} !~ m/^\d+$/ );
-        if ( $in{'limit'} < 1 || $in{'limit'} > 2000 ) {
-            carp( "A query's limit cannot exceed 2000. 500 is default." );
+        $in{limit} = 500
+            unless ( exists $in{limit} and defined $in{limit} and $in{limit} =~ m/^\d+$/ );
+        if ( $in{limit} < 1 or $in{limit} > 2000 ) {
+            $errstr = "A query's limit cannot exceed 2000. 500 is default.";
             return 0;
         }
 
@@ -553,8 +606,12 @@ package WWW::Salesforce;
             $limit,
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -568,8 +625,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'userId'} || !length $in{'userId'} ) {
-            carp( "A hash expected with key 'userId'" );
+        unless ( exists $in{userId} and defined $in{userId} and length $in{userId} ) {
+            $errstr = "A hash expected with key 'userId'";
             return 0;
         }
 
@@ -585,8 +642,12 @@ package WWW::Salesforce;
             $self->get_session_header()
         );
 
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -600,22 +661,22 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        $in{'limit'} = 500
-            if ( !defined $in{'limit'} || $in{'limit'} !~ m/^\d+$/ );
-        if ( $in{'limit'} < 1 || $in{'limit'} > 2000 ) {
-            carp( "A query's limit cannot exceed 2000. 500 is default." );
+        $in{limit} = 500
+            unless ( exists $in{limit} and defined $in{limit} and $in{limit} =~ m/^\d+$/ );
+        if ( $in{limit} < 1 || $in{limit} > 2000 ) {
+            $errstr = "A query's limit cannot exceed 2000. 500 is default.";
             return 0;
         }
-        if ( !defined $in{'fields'} || !length $in{'fields'} ) {
-            carp( "Hash with key 'fields' expected." );
+        unless ( exists $in{fields} and defined $in{fields} and length $in{fields} ) {
+            $errstr = "Hash with key 'fields' expected.";
             return 0;
         }
-        if ( !defined $in{'ids'} || !length $in{'ids'} ) {
-            carp( "Hash with key 'ids' expected." );
+        unless ( exists $in{ids} and defined $in{ids} and length $in{ids} ) {
+            $errstr = "Hash with key 'ids' expected.";
             return 0;
         }
-        if ( !defined $in{'type'} || !length $in{'type'} ) {
-            carp( "Hash with key 'type' expected." );
+        unless ( exists $in{type} and defined $in{type} and length $in{type} ) {
+            $errstr = "Hash with key 'type' expected.";
             return 0;
         }
 
@@ -645,8 +706,12 @@ package WWW::Salesforce;
             $self->get_session_header()
         );
 
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -660,8 +725,8 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'searchString'} || !length $in{'searchString'} ) {
-            carp( "Expected hash with key 'searchString'" );
+        unless ( exists $in{searchString} and defined $in{searchString} and length $in{searchString} ) {
+            $errstr = "Expected hash with key 'searchString'";
             return 0;
         }
         my $client = $self->get_client(1);
@@ -675,8 +740,13 @@ package WWW::Salesforce;
                 ->type( 'xsd:string' ), 
             $self->get_session_header()
         );
+		
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
@@ -690,12 +760,12 @@ package WWW::Salesforce;
         my $self = shift;
         my (%in) = @_;
 
-        if ( !defined $in{'userId'} || !length $in{'userId'} ) {
-            carp( "Expected a hash with key 'userId'" );
+        unless ( exists $in{userId} and defined $in{userId} and length $in{userId} ) {
+            $errstr = "Expected a hash with key 'userId'";
             return 0;
         }
-        if ( !defined $in{'password'} || !length $in{'password'} ) {
-            carp( "Expected a hash with key 'password'" );
+        unless ( exists $in{password} defined $in{password} and length $in{password} ) {
+            $errstr = "Expected a hash with key 'password'";
             return 0;
         }
 
@@ -713,8 +783,12 @@ package WWW::Salesforce;
                 ->type( 'xsd:string' ), 
             $self->get_session_header()
         );
+		unless ( ref($r) ) {
+			$errstr = $r;
+			return 0;
+		}
         if ( $r->fault() ) {
-            carp( $r->faultstring() );
+            $errstr = $r->faultstring();
             return 0;
         }
         return $r;
