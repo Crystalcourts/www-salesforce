@@ -33,7 +33,7 @@ package WWW::Salesforce::Simple;
         }
 
         $limit = 2000
-            unless $limit =~ m/^\d+$/ and $limit > 0 and $limit < 2001;
+            unless defined $limit =~ m/^\d+$/ and $limit > 0 and $limit < 2001;
 
         my @rows = (); #to be returned
 
