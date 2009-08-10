@@ -942,11 +942,9 @@ WWW::Salesforce - this class provides a simple abstraction layer between SOAP::L
 
 This class provides a simple abstraction layer between SOAP::Lite and Salesforce.com. Because SOAP::Lite does not support complexTypes, and document/literal encoding is limited, this module works around those limitations and provides a more intuitive interface a developer can interact with.
 
-=head2 METHODS
+=head1 METHODS
 
-=over 
-
-=item login( HASH )
+=head2 login( HASH )
 
 The C<login> method returns an object of type WWW::Salesforce if the login attempt was successful, and 0 otherwise. Upon a successful login, the sessionId is saved and the serverUrl set properly so that developers need not worry about setting these values manually. Upon failure, $! is set containing the error and a 0 is returned.
 
@@ -964,7 +962,7 @@ The password for the user indicated by C<username>.
 
 =back
 
-=item convertLead( HASH )
+=head2 convertLead( HASH )
 
 The C<convertLead> method returns an object of type SOAP::SOM if the login attempt was successful, and 0 otherwise.
 
@@ -979,7 +977,7 @@ The following are the accepted input parameters:
 
 =back
 
-=item create( HASH )
+=head2 create( HASH )
 
 Adds one new individual objects to your organization's data. This takes as input a HASH containing the fields (the keys of the hash) and the values of the record you wish to add to your arganization.
 The hash must contain the 'Type' key in order to identify the type of the record to add.
@@ -988,7 +986,7 @@ The hash must contain the 'Type' key in order to identify the type of the record
 
 =back
 
-=item delete( ARRAY )
+=head2 delete( ARRAY )
 
 Deletes one or more individual objects from your organization's data. This subroutine takes as input an array of SCALAR values, where each SCALAR is an sObjectId.
 
@@ -996,7 +994,7 @@ Deletes one or more individual objects from your organization's data. This subro
 
 =back
 
-=item query( HASH )
+=head2 query( HASH )
 
 Executes a query against the specified object and returns data that matches the specified criteria.
 
@@ -1012,7 +1010,7 @@ This sets the batch size, or size of the result returned. This is helpful in pro
 
 =back
 
-=item queryMore( HASH )
+=head2 queryMore( HASH )
 
 Retrieves the next batch of objects from a C<query>.
 
@@ -1028,13 +1026,13 @@ This sets the batch size, or size of the result returned. This is helpful in pro
 
 =back
 
-=item update(type => $type, HASHREF [, HASHREF ...])
+=head2 update(type => $type, HASHREF [, HASHREF ...])
 
 Updates one or more existing objects in your organization's data. This subroutine takes as input a B<type> value which names the type of object to update (e.g. Account, User) and one or more perl HASH references containing the fields (the keys of the hash) and the values of the record that will be updated.
 
 The hash must contain the 'Id' key in order to identify the record to update.
 
-=item upsert(type => $type, key => $key, HASHREF [, HASHREF ...])
+=head2 upsert(type => $type, key => $key, HASHREF [, HASHREF ...])
 
 Updates or inserts one or more objects in your organization's data.  If the data doesn't exist on Salesforce, it will be inserted.  If it already exists it will be updated.
 
@@ -1042,11 +1040,11 @@ This subroutine takes as input a B<type> value which names the type of object to
 
 Finally, this method takes one or more perl HASH references containing the fields (the keys of the hash) and the values of the record that will be updated.
 
-=item getServerTimestamp()
+=head2 getServerTimestamp()
 
 Retrieves the current system timestamp (GMT) from the sforce Web service.
 
-=item getUserInfo( HASH )
+=head2 getUserInfo( HASH )
 
 Retrieves personal information for the user associated with the current session.
 
@@ -1058,7 +1056,7 @@ A user ID
 
 =back
 
-=item getUpdated( HASH )
+=head2 getUpdated( HASH )
 
 Retrieves the list of individual objects that have been updated (added or changed) within the given timespan for the specified object.
 
@@ -1078,7 +1076,7 @@ A string identifying the end date/time for the query
 
 =back
 
-=item getDeleted( HASH )
+=head2 getDeleted( HASH )
 
 Retrieves the list of individual objects that have been deleted within the given timespan for the specified object.
 
@@ -1098,7 +1096,7 @@ A string identifying the end date/time for the query
 
 =back
 
-=item describeSObject( HASH )
+=head2 describeSObject( HASH )
 
 Describes metadata (field list and object properties) for the specified object.
 
@@ -1110,7 +1108,7 @@ The type of the object you wish to have described.
 
 =back
 
-=item describeLayout( HASH )
+=head2 describeLayout( HASH )
 
 Describes metadata about a given page layout, including layouts for edit and display-only views and record type mappings.
 
@@ -1122,11 +1120,11 @@ The type of the object you wish to have described.
 
 =back
 
-=item describeGlobal()
+=head2 describeGlobal()
 
 Retrieves a list of available objects for your organization's data.
 
-=item setPassword( HASH )
+=head2 setPassword( HASH )
 
 Sets the specified user's password to the specified value.
 
@@ -1142,7 +1140,7 @@ The new password to assign to the user identified by C<userId>.
 
 =back
 
-=item resetPassword( HASH )
+=head2 resetPassword( HASH )
 
 Changes a user's password to a server-generated value.
 
@@ -1154,7 +1152,7 @@ A user Id.
 
 =back
 
-=item retrieve( HASH )
+=head2 retrieve( HASH )
 
 =over
 
@@ -1172,15 +1170,13 @@ The ids (LIST) of the object you want returned.
 
 =back
 
-=item search( HASH )
+=head2 search( HASH )
 
 =over
 
 =item searchString
 
 The search string to be used in the query. For example, "find {4159017000} in phone fields returning contact(id, phone, firstname, lastname), lead(id, phone, firstname, lastname), account(id, phone, name)"
-
-=back
 
 =back
 
