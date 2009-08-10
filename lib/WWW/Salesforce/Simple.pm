@@ -128,6 +128,8 @@ was created to make it a little simpler to get information.
 
 =head1 METHODS
 
+This is a subclass of L<WWW::Salesforce> and inherits all of its methods.
+
 =head2 new( %parameters )
 
 Handles creating new Salesforce objects as well as the login process
