@@ -4,15 +4,21 @@ use Moose; #turns on strict and warnings
 
 use Carp qw(croak carp confess);
 use SOAP::Lite;# ( +trace => 'all', readable => 1, );#, outputxml => 1, );
-#use Data::Dumper;
+use Scalar::Util;
+use Data::Dumper;
 
 use WWW::Salesforce::Constants;
 use WWW::Salesforce::Serializer;
 
 use WWW::Salesforce::SObject;
+use WWW::Salesforce::DescribeGlobalResult;
+use WWW::Salesforce::DescribeGlobalSObjectResult;
+use WWW::Salesforce::DescribeSObjectResult;
 use WWW::Salesforce::LeadConvert;
 use WWW::Salesforce::LeadConvertResult;
+use WWW::Salesforce::LoginResult;
 use WWW::Salesforce::GetUserInfoResult;
+use WWW::Salesforce::PicklistEntry;
 
 use vars qw( $VERSION );
 $VERSION = '0.200_2'; # note: should be x.xxx (three decimal places)
@@ -26,7 +32,7 @@ has 'sandbox' => ( is => 'ro', isa => 'Bool', default => '0' );
 has 'serverurl' => (
     is => 'ro',
     isa => 'Str',
-    default => 'https://www.salesforce.com/services/Soap/u/16.0'
+    default => 'https://www.salesforce.com/services/Soap/u/23.0'
 );
 has 'uri' => (
     is => 'ro',
@@ -60,6 +66,111 @@ sub BUILD {
     $self->{sid} = q();
     $self->{uid} = q();
     $self->{origurl} = q();
+}
+
+sub _create_child_relationships {
+    my $input = shift;
+    return undef unless defined $input;
+    my @children = ();
+    if ( Scalar::Util::reftype($input) eq 'ARRAY' ) {
+        for my $child ( @{$input} ) {
+            for my $key ( keys %{$child} ) {
+                $child->{$key} = 1 if ( lc($child->{$key}) eq 'true' );
+                $child->{$key} = 0 if ( lc($child->{$key}) eq 'false' );
+            }
+            push @children, WWW::Salesforce::ChildRelationship->new( $child );
+        }
+    } elsif ( Scalar::Util::reftype($input) eq 'HASH' ) {
+        for my $key ( keys %{$input} ) {
+            $input->{$key} = 1 if ( lc($input->{$key}) eq 'true' );
+            $input->{$key} = 0 if ( lc($input->{$key}) eq 'false' );
+        }
+        push @children, WWW::Salesforce::ChildRelationship->new( $input );
+    }
+    return \@children if @children;
+    return undef;
+}
+sub _create_fields {
+    my $input = shift;
+    return undef unless defined $input;
+    my @fields = ();
+    if ( Scalar::Util::reftype($input) eq 'ARRAY' ) {
+        for my $fld ( @{$input} ) {
+            $fld->{picklistValues} = _create_picklist_entries( $fld->{picklistValues} );
+            $fld->{referenceTo} = _create_references_to( $fld->{referenceTo} );
+            delete($fld->{picklistValues}) unless defined $fld->{picklistValues};
+            delete($fld->{referenceTo}) unless defined $fld->{referenceTo};
+
+            for my $key ( keys %{$fld} ) {
+                unless( $key eq 'picklistValues' or $key eq 'referenceTo' ) {
+                    $fld->{$key} = 1 if ( lc($fld->{$key}) eq 'true' );
+                    $fld->{$key} = 0 if ( lc($fld->{$key}) eq 'false' );
+                }
+            }
+            push @fields, WWW::Salesforce::Field->new( $fld );
+        }
+    }
+    return \@fields if @fields;
+    return undef;
+}
+sub _create_picklist_entries {
+    my $input = shift;
+    return undef unless defined $input;
+    my @picks = ();
+    if ( Scalar::Util::reftype($input) eq 'ARRAY' ) {
+        for my $pick ( @{$input} ) {
+            for my $key ( keys %{$pick} ) {
+                $pick->{$key} = 1 if ( lc($pick->{$key}) eq 'true' );
+                $pick->{$key} = 0 if ( lc($pick->{$key}) eq 'false' );
+            }
+            push @picks, WWW::Salesforce::PicklistEntry->new( $pick );
+        }
+    } elsif ( Scalar::Util::reftype($input) eq 'HASH' ) {
+        for my $key ( keys %{$input} ) {
+            $input->{$key} = 1 if ( lc($input->{$key}) eq 'true' );
+            $input->{$key} = 0 if ( lc($input->{$key}) eq 'false' );
+        }
+        push @picks, WWW::Salesforce::PicklistEntry->new( $input );
+    }
+    return \@picks if @picks;
+    return undef;
+}
+sub _create_record_type_infos {
+    my $input = shift;
+    return undef unless defined $input;
+    my @rtis = ();
+    if ( Scalar::Util::reftype($input) eq 'ARRAY' ) {
+        for my $record ( @{$input} ) {
+            for my $key ( keys %{$record} ) {
+                $record->{$key} = 1 if ( lc($record->{$key}) eq 'true' );
+                $record->{$key} = 0 if ( lc($record->{$key}) eq 'false' );
+            }
+            push @rtis, WWW::Salesforce::RecordTypeInfo->new( $record );
+        }
+    } elsif ( Scalar::Util::reftype($input) eq 'HASH' ) {
+        for my $key ( keys %{$input} ) {
+            $input->{$key} = 1 if ( lc($input->{$key}) eq 'true' );
+            $input->{$key} = 0 if ( lc($input->{$key}) eq 'false' );
+        }
+        push @rtis, WWW::Salesforce::RecordTypeInfo->new( $input );
+    }
+    return \@rtis if @rtis;
+    return undef;
+}
+sub _create_references_to {
+    my $input = shift;
+    return undef unless defined $input;
+    my @references = ();
+    
+    if ( Scalar::Util::reftype($input) ) {
+        for my $str ( @{$input} ) {
+            push( @references, $str ) if length($str);
+        }
+    } else {
+        push( @references, $input ) if length($input);
+    }
+    return \@references if @references;
+    return undef;
 }
 
 #*******************************************************************************
@@ -180,6 +291,99 @@ sub create {
         return 0;
     }
     return $r;
+}
+
+#**************************************************************************
+# describeGlobal()     -- API
+#   -- Retrieves a list of available objects for your organization's data
+#**************************************************************************
+sub describeGlobal {
+    my $self = shift;
+
+    my $client = $self->get_client(1);
+    my $r = $client->describeGlobal( $self->get_session_header() );
+    return 0 if ( $self->has_error( $r ) );
+    #print Dumper $r;die();
+    my @objs = $r->valueof( '//describeGlobalResponse/result/sobjects' );
+    my @sobjects = ();
+    for my $obj ( @objs ) {
+        for my $key ( keys %{$obj} ) {
+            next unless exists $obj->{$key};
+            unless ( exists($obj->{$key}) and defined($obj->{$key}) ) {
+                delete($obj->{$key});
+                next;
+            }
+            $obj->{$key} = 0 if lc($obj->{$key}) eq 'false';
+            $obj->{$key} = 1 if lc($obj->{$key}) eq 'true';
+        }
+        push @sobjects, WWW::Salesforce::DescribeGlobalSObjectResult->new( %{$obj} );
+    }
+    return WWW::Salesforce::DescribeGlobalResult->new(
+        'encoding' => $r->valueof( '//describeGlobalResponse/result/encoding' ),
+        'maxBatchSize' => $r->valueof( '//describeGlobalResponse/result/maxBatchSize' ),
+        'sobjects' => \@sobjects,
+    );
+}
+
+sub describeSObject {
+    my $self = shift;
+    my $name = shift;
+    Carp::confess( "An SObject name is required to describeSObject()" ) unless $name;
+    return $self->describeSObjects( [$name,] );
+}
+
+sub describeSObjects {
+    my $self = shift;
+    my $objects = shift;
+    Carp::confess( "An array reference of SObject names is required to describeSObjects()" )
+        unless Scalar::Util::reftype($objects) eq 'ARRAY';
+    my $client = $self->get_client(1);
+    my $r = $client->describeSObjects(
+        SOAP::Data
+            ->name('sObjectType')
+            ->value( @{$objects} )
+            ->type('xsd:string'),
+        $self->get_session_header()
+    );
+    return 0 if ( $self->has_error( $r ) );
+    my %res = %{$r->valueof('//describeSObjectsResponse/')};
+    my @sobjects = ();
+    if ( Scalar::Util::reftype($res{result}) ) {
+        if ( Scalar::Util::reftype($res{result}) eq 'ARRAY' ) {
+            for my $obj ( @{$res{result}} ) {
+                $obj->{childRelationships} = _create_child_relationships( $obj->{childRelationships} );
+                $obj->{recordTypeInfos} = _create_record_type_infos( $obj->{recordTypeInfos} );
+                $obj->{fields} = _create_fields( $obj->{fields} );
+                delete($obj->{childRelationships}) unless defined($obj->{childRelationships});
+                delete($obj->{recordTypeInfos}) unless defined($obj->{recordTypeInfos});
+                delete($obj->{fields}) unless defined($obj->{fields});
+                for my $key ( keys %{$obj} ) {
+                    unless ( $key eq 'childRelationships' or $key eq 'recordTypeInfos' or $key eq 'fields' ) {
+                        $obj->{$key} = 1 if ( lc($obj->{$key}) eq 'true' );
+                        $obj->{$key} = 0 if ( lc($obj->{$key}) eq 'false' );
+                    }
+                }
+                push @sobjects, WWW::Salesforce::DescribeSObjectResult->new( $obj );
+            }
+        } else {
+            $res{result}->{childRelationships} = _create_child_relationships( $res{result}->{childRelationships} );
+            $res{result}->{recordTypeInfos} = _create_record_type_infos( $res{result}->{recordTypeInfos} );
+            $res{result}->{fields} = _create_fields( $res{result}->{fields} );
+            delete($res{result}->{childRelationships}) unless defined($res{result}->{childRelationships});
+            delete($res{result}->{recordTypeInfos}) unless defined($res{result}->{recordTypeInfos});
+            delete($res{result}->{fields}) unless defined($res{result}->{fields});
+            for my $key ( keys %{$res{result}} ) {
+                unless ( $key eq 'childRelationships' or $key eq 'recordTypeInfos' or $key eq 'fields' ) {
+                    $res{result}->{$key} = 1 if ( lc($res{result}->{$key}) eq 'true' );
+                    $res{result}->{$key} = 0 if ( lc($res{result}->{$key}) eq 'false' );
+                }
+            }
+            push @sobjects, WWW::Salesforce::DescribeSObjectResult->new( $res{result} );
+        }
+    } else {
+        Carp::confess( "We didn't get back a data type that we know how to deal with!\n" );
+    }
+    return \@sobjects;
 }
 
 #*******************************************************************************
@@ -311,7 +515,17 @@ sub login {
         $uinfo{$key} = 0 if lc($uinfo{$key}) eq 'false';
         $uinfo{$key} = 1 if lc($uinfo{$key}) eq 'true';
     }
-    return WWW::Salesforce::GetUserInfoResult->new( %uinfo );
+    my $password_exp = 0;
+    $password_exp = 1 if ( lc($r->valueof('//loginResponse/result/passwordExpired')) eq 'true' );
+    return WWW::Salesforce::LoginResult->new(
+        metadataServerUrl => $self->{metaurl},
+        passwordExpired => $password_exp,
+        serverUrl => $self->{serverurl},
+        sessionId => $self->{sid},
+        userId => $self->{uid},
+        userInfo => WWW::Salesforce::GetUserInfoResult->new( %uinfo ),
+    );
+    return ;
 }
 
 #*******************************************************************************
@@ -474,7 +688,7 @@ The following are the accepted input parameters:
 
 =item serverurl
 
-The default is 'https://www.salesforce.com/services/Soap/u/16.0'. You might want to use 'https://test.salesforce.com/services/Soap/u/16.0' to connect to your sandbox.  Here is the documentation for login URLs: L<http://www.salesforce.com/us/developer/docs/api/Content/implementation_considerations.htm>
+The default is 'https://www.salesforce.com/services/Soap/u/23.0'. You might want to use 'https://test.salesforce.com/services/Soap/u/23.0' to connect to your sandbox.  Here is the documentation for login URLs: L<http://www.salesforce.com/us/developer/docs/api/Content/implementation_considerations.htm>
 
 =item uri   
 

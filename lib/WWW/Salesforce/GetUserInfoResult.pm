@@ -6,8 +6,8 @@ extends 'WWW::Salesforce::SObject';
 
 use Carp qw(croak carp confess);
 
-use vars qw( $VERSION );
-$VERSION = '0.001'; # note: should be x.xxx (three decimal places)
+our $VERSION = "0.002";
+$VERSION = eval $VERSION;
 
 has 'accessibilityMode' => ( is => 'rw', isa => 'Bool', default => 0 );
 has 'currencySymbol' => ( is => 'rw', isa => 'Str', default => '' );
@@ -16,7 +16,9 @@ has 'profileId' => ( is => 'rw', isa => 'SF::ID' );
 has 'organizationId' => ( is => 'rw', isa => 'Str', default => '' );
 has 'organizationMultiCurrency' => ( is => 'rw', isa => 'Bool', default => 0 );
 has 'organizationName' => ( is => 'rw', isa => 'Str', default => '' );
+has 'orgDefaultCurrencyIsoCode' => ( is => 'rw', isa => 'Str', default => '' );
 has 'roleId' => ( is => 'rw', isa => 'SF::ID' );
+has 'sessionSecondsValid' => ( is => 'rw', isa => 'Int', default => 0 );
 has 'userDefaultCurrencyIsoCode' => ( is => 'rw', isa => 'Str', default => '' );
 has 'userEmail' => ( is => 'rw', isa => 'Str', default => '' );
 has 'userFullName' => ( is => 'rw', isa => 'Str', default => '' );
