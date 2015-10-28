@@ -499,7 +499,9 @@ package WWW::Salesforce;
             $errstr = "WWW::Salesforce::login() requires a password";
             return 0;
         }
-		
+	if ($params{'url'}) {
+       	    $SF_PROXY = $params{'url'};
+    	}
         my $self = {
             sf_user => $params{'username'},
             sf_pass => $params{'password'},
